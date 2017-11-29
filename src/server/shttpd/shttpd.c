@@ -1472,24 +1472,16 @@ set_ssl(struct shttpd_ctx *ctx, const char *pem)
 	void		*lib;
 	struct ssl_func	*fp;
 	char *ssl_disabled_protocols = wsmand_options_get_ssl_disabled_protocols();
-	char *ssl_cipher_list = wsmand_options_get_ssl_cipher_list();
 	int		retval = FALSE;
-	EC_KEY*		key;
-
-	/* Load SSL library dynamically */
-	if ((lib = dlopen(SSL_LIB, RTLD_LAZY)) == NULL) {
-		_shttpd_elog(E_LOG, NULL, "set_ssl: cannot load %s", SSL_LIB);
-		return (FALSE);
-	}
-
-	for (fp = ssl_sw; fp->name != NULL; fp++)
-		if ((fp->ptr.v_void = dlsym(lib, fp->name)) == NULL) {
-			_shttpd_elog(E_LOG, NULL,"set_ssl: cannot find %s", fp->name);
-			return (FALSE);
-		}
 
 	/* Initialize SSL crap */
+	debug("Initialize SSL");
+	SSL_load_error_strings();
+	#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_library_init();
+	#else
+	OPENSSL_init_ssl(0, NULL);
+	#endif
 
 	if ((CTX = SSL_CTX_new(SSLv23_server_method())) == NULL)
 		_shttpd_elog(E_LOG, NULL, "SSL_CTX_new error");
@@ -1499,13 +1491,6 @@ set_ssl(struct shttpd_ctx *ctx, const char *pem)
 		_shttpd_elog(E_LOG, NULL, "cannot open PrivateKey %s", pem);
 	else
 		retval = TRUE;
-
-	/* This enables ECDH Perfect Forward secrecy. Currently with just the most generic p256 prime curve */
-	key = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
-	if (key != NULL) {
-		SSL_CTX_set_tmp_ecdh(CTX, key);
-		EC_KEY_free(key);
-	}
 
 	while (ssl_disabled_protocols) {
 		struct ctx_opts_t {
@@ -1532,7 +1517,11 @@ set_ssl(struct shttpd_ctx *ctx, const char *pem)
 			if (strncasecmp(protocols[idx].name, ssl_disabled_protocols, blank_ptr-ssl_disabled_protocols) == 0) {
 				//_shttpd_elog(E_LOG, NULL, "SSL: disable %s protocol", protocols[idx].name);
 				debug("SSL: disable %s protocol", protocols[idx].name);
+				#if OPENSSL_VERSION_NUMBER < 0x10100000L
 				SSL_CTX_ctrl(CTX, SSL_CTRL_OPTIONS, protocols[idx].opt, NULL);
+				#else
+				SSL_CTX_set_options(CTX, protocols[idx].opt);
+				#endif
 				break;
 			}
 		}
@@ -1541,12 +1530,6 @@ set_ssl(struct shttpd_ctx *ctx, const char *pem)
 		ssl_disabled_protocols = blank_ptr + 1;
 	}
 
-	if (ssl_cipher_list) {
-          int rc = SSL_CTX_set_cipher_list(CTX, ssl_cipher_list);
-          if (rc != 0) {
-            _shttpd_elog(E_LOG, NULL, "Failed to set SSL cipher list \"%s\"", ssl_cipher_list);
-          }
-        }
 	ctx->ssl_ctx = CTX;
 
 	return (retval);

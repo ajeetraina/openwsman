@@ -1,3 +1,76 @@
+# Pre-requisite
+
+
+```
+# Install autoconf (Automatic configure script builder) and associated dependencies
+
+debian:~$ sudo apt-get install autoconf automake autotools-dev libsigsegv2 m4
+```
+
+# Install Cmake and associated dependencies
+```
+debian:~$ sudo apt-get install cmake cmake-data libjsoncpp1
+```
+
+# Install Default JDK and associated dependencies
+```
+debian:~$ sudo apt-get install ca-certificates-java default-jdk default-jdk-headless default-jre default-jre-headless fonts-dejavu-extra java-common libbonobo2-0 libbonobo2-common libgif7 libgnome-2-0 libgnome2-common libgnomevfs2-0 libgnomevfs2-common liborbit-2-0 openjdk-8-jdk openjdk-8-jdk-headless openjdk-8-jre openjdk-8-jre-headless
+```
+# Install PAM (pluggable authentication module) development module
+```
+debian:~$ sudo apt-get install libpam0g-dev
+```
+
+# Install Curl OpenSSL Development Libraries
+```
+debian:~$ sudo apt-get install libcurl4-openssl-dev
+```
+# Install development files for the GNOME XML Libraries
+```
+debian:~$ sudo apt-get install icu-devtools libicu-dev libxml2-dev
+```
+# Install SWIG (Simplified Wrapper & Interface Generator) for wrapping C/C++ functions for use with a script generator
+```
+debian:~$ sudo apt-get install swig3.0
+```
+# Install sblim-sfcc (Small Footprint CIM Client) libraries
+```
+debian:~$ sudo apt-get install libcimcclient0 libcimcclient0-dev
+```
+# Install python development libraries
+```
+debian:~$ sudo apt-get install libpython-dev
+```
+
+Download the latest committed release openwsman-2.6.3.tar.gz source tar ball from the github url and extract it:
+```
+debian:~$ cd /tmp
+
+debian:/tmp$ wget https://github.com/Openwsman/openwsman/archive/v2.6.3.tar.gz -O /tmp/openwsman-2.6.3.tar.gz
+
+debian:/tmp$ tar –zxvf openwsman-2.6.3.tar.gz
+
+```
+Let’s disable the Ruby bindings so that you don’t run into Ruby installations errors. In order to do so, please navigate to openwsman-2.6.3 directory and edit the top-level CMakeLists.txt file and set the BUILD_RUBY option to NO.
+```
+debian:/tmp$ cd openwsman-2.6.3
+
+debian:/tmp/openwsman-2.6.3$ perl –p –i –e "s/(\\$\{CURL_LIBRARIES\})/\1 ssl crypto/g" src/lib/CMakeLists.txt
+
+debian:/tmp/openwsman-2.6.3$ vi CMakeLists.txt
+```
+#Find and edit the BUILD_RUBY target option to NO:
+``
+OPTION( BUILD_RUBY “Build Ruby Bindings” YES)
+
+                           To
+
+OPTION( BUILD_RUBY “Build Ruby Bindings” NO)
+```
+
+
+
+
 # How to compile and run openwsman from GIT ? 
 
 After checking out the project from git, create a build directory
